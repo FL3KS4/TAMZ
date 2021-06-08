@@ -1,0 +1,455 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"> 
+  <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsenui.css">
+  <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsen-css-components.min.css">
+  <script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
+  <script src="https://unpkg.com/jquery/dist/jquery.min.js"></script>
+ <script > 
+
+//CV 7
+//TODO 1 Základní verze převodníku bez argumentů (datum, jazyk) ✅
+//TODO 2 Využití argumentů datum, jazyk ✅
+//TODO 3 Využití rozšířeného listu s filtrem
+//TODO 4 Využití sse event stream
+
+//CV 10
+//TODO 1 Ukládání ,,rates,, 10měsíců dozadu od daného data pro stejný den ✅
+//TODO 2 Graf graf ukazuje jednotky od (vybraný měsíc - 10) po vybraný měsíc✅
+
+class Currency
+{
+    constructor(countryLabel, currLabel, unitLabel, codeLabel, rateLabel)
+    {
+        this.countryLabel = countryLabel;
+        this.currLabel = currLabel;
+        this.unitLabel = unitLabel;
+        this.codeLabel = codeLabel;
+        this.rateLabel = rateLabel;
+    }
+    getCountry()
+    {
+        return this.countryLabel;
+    }
+    getCurrency()
+    {
+        return this.currLabel;
+    }
+    getUnit()
+    {
+        return this.unitLabel;
+    }
+    getCode()
+    {
+        return this.codeLabel;
+    }
+    getRate()
+    {
+        return this.rateLabel;
+    }
+
+}
+
+var curList = [];
+var dateList = [];
+var urlCNB = "http://linedu.vsb.cz/~mor03/TAMZ/cnb_json.php";
+
+document.addEventListener('init', function(event)
+{
+    
+    if (event.target.id === 'page1')
+    {
+        getTodayDate();
+        //loadCNB();
+
+        getJSONDate();
+        //https://www.w3schools.com/jquery/event_keyup.asp   
+    }
+
+});
+
+async function myDategetJSON(id) 
+{
+    dateList = [];
+    var lang = $("#flag").text();
+    var year = new Date($("#taskDate").val()).getFullYear();
+    var day = new Date($("#taskDate").val()).getDate();
+    var month = new Date($("#taskDate").val()).getMonth()+1;
+    $("#monthlyRate").empty();
+
+    //const data = await $.getJSON( urlCNB+"?lang="+lang+"&date="+year+"-"+month+"-"+day);
+
+    for(var i = 0; i < 10;i++)
+    {
+        let json = await $.getJSON( urlCNB+"?lang="+lang+"&date="+year+"-"+month+"-"+day);
+        
+
+        for(var j = 0; j < json.data.length; j++)
+        {
+            //console.log(curList[id].getCode());
+            //console.log(json.data[j].country_label);
+   
+           if(curList[id].getCode() === json.data[j].code)
+           {
+                //console.log(json.data[j].rate);
+                dateList.push(json.data[j].rate);
+
+                var onsItem= document.createElement('ons-list-item');
+                var todoText = year + "-"+ month + "-" + day + " | "+ json.data[j].rate;   
+                onsItem.innerHTML = todoText; 
+            
+                onsItem.setAttribute('modifier', "tappable");
+                document.getElementById('monthlyRate').appendChild(onsItem); 
+
+           }           
+        }
+
+        //console.log(month);
+       
+        month = month - 1;
+        if(month == 0)
+        {
+            month = 12;
+            year = year - 1;
+        }
+        
+    }
+    
+    /*for(var j = 0; j < 10; j++)
+    {
+        console.log(dateList[j]);
+    }*/
+
+    createGraph();
+   
+    
+
+    return dateList; 
+}
+
+function createGraph()
+{
+
+    
+
+    var canvas = document.getElementById("myCanvas");  
+    var context = canvas.getContext("2d");  
+
+    context.clearRect(0, 0, canvas.width, canvas.height)
+
+    var GRAPH_TOP = 25;  
+    var GRAPH_BOTTOM = 175;  
+    var GRAPH_LEFT = 25;  
+    var GRAPH_RIGHT = 275; 
+
+    var GRAPH_HEIGHT = 200;   
+    var GRAPH_WIDTH = 300;  
+
+    
+
+    context.beginPath();  
+    context.moveTo( GRAPH_LEFT, GRAPH_TOP );  
+    context.lineTo( GRAPH_LEFT, GRAPH_BOTTOM );  
+    context.lineTo( GRAPH_RIGHT, GRAPH_BOTTOM );  
+    context.stroke()
+
+    var arrayLen = dateList.length;
+    
+    var largest = 0;  
+    for( var i = 0; i < arrayLen; i++ )
+    {  
+        if( dateList[ i ] > largest )
+        {  
+            largest = dateList[ i ] ;  
+        } 
+        
+    }  
+
+    context.beginPath(); 
+
+    context.lineJoin = "round";  
+
+    context.strokeStyle = "black";   
+
+    var temp = arrayLen - 1;
+
+    
+    context.moveTo( GRAPH_LEFT, ( GRAPH_HEIGHT - (dateList[ temp ] ) / largest * GRAPH_HEIGHT )* 2 + GRAPH_TOP + 50); 
+    temp = temp - 1;  
+
+    for( var i = 1; i < arrayLen; i++ )
+    {  
+        context.lineTo( GRAPH_RIGHT / arrayLen * i + GRAPH_LEFT, ( GRAPH_HEIGHT - (dateList[ temp ] ) / largest * GRAPH_HEIGHT )* 2 + GRAPH_TOP + 50 );  
+        temp = temp - 1;
+    }   
+
+    context.stroke();
+}
+
+
+function loadCNB()
+{
+
+
+    $.getJSON( urlCNB, function( json )
+    {
+        for(var i = 0; i < json.data.length; i++)
+        {
+           var countryL = json.data[i].country_label;
+           var currL = json.data[i].curr_label; 
+           var unitL = json.data[i].unit; 
+           var codeL = json.data[i].code; 
+           var rateL = json.data[i].rate; 
+           
+           //jedna z moznosti je ukladat si meny do listu a z neho pak vytvorit ons-list 
+           var myCurrency = new Currency(countryL, currL, unitL, codeL, rateL);
+           //console.log(myCurrency.getCurrency());
+
+           curList.push(myCurrency);
+           //curList.push(json.data[i].country_label);
+        }                  
+    }); 
+
+
+    var Dates = new Date($("#taskDate").val()).toLocaleDateString();
+    var year = new Date($("#taskDate").val()).getFullYear();
+    console.log(year);
+    
+       
+}
+
+function deleteArray()
+{
+    for(var i = 0; i < curList.length; i++)
+        {
+
+        }
+};
+
+function getJSONDate()
+{
+
+    curList = [];      
+    $('#CZK').val(0);
+    $('#CUR').val(0);
+
+    var lang = $("#flag").text()
+    //var Dates = new Date($("#taskDate").val()).toLocaleDateString();
+    var year = new Date($("#taskDate").val()).getFullYear();
+    var day = new Date($("#taskDate").val()).getDate();
+    var month = new Date($("#taskDate").val()).getMonth()+1;
+    var url_temp = "http://linedu.vsb.cz/~mor03/TAMZ/cnb_json.php?lang=en&date=2018-01-01";
+    var url = urlCNB+"?lang="+lang+"&date="+year+"-"+month+"-"+day;
+
+    console.log(url);
+    
+    $.getJSON( url, function( json )
+    {
+        for(var i = 0; i < json.data.length; i++)
+        {
+           var countryL = json.data[i].country_label;
+           var currL = json.data[i].curr_label; 
+           var unitL = json.data[i].unit; 
+           var codeL = json.data[i].code; 
+           var rateL = json.data[i].rate; 
+           
+           //jedna z moznosti je ukladat si meny do listu a z neho pak vytvorit ons-list 
+           var myCurrency = new Currency(countryL, currL, unitL, codeL, rateL);
+           //console.log(myCurrency.getCurrency());
+
+           curList.push(myCurrency);
+           //curList.push(json.data[i].country_label);
+        }                  
+    }); 
+}
+
+
+function addDialog()
+{
+    $('#CZK').val(0);
+    $('#CUR').val(0);
+    document.getElementById('dialog-1').show();
+    $("#onsList").empty();
+    for (var i = 0; i < curList.length; i++)
+    {
+        var onsItem= document.createElement('ons-list-item');
+        var todoText = curList[i].getCode() +" - " + curList[i].getCountry();   
+        onsItem.innerHTML = todoText; 
+        
+        onsItem.setAttribute('modifier', "tappable");
+        onsItem.setAttribute('onclick', 'setCountry('+i+')');
+        document.getElementById('onsList').appendChild(onsItem);               
+    }   
+    
+}
+
+
+
+function setCountry(id)
+{
+    myDategetJSON(id);
+    document.getElementById('dialog-1').hide();
+    document.getElementById('curP').innerHTML = curList[id].getCode();
+    $("#push-button1").text(curList[id].getCountry() + " " + curList[id].getRate());
+    
+
+    $('#CZK').on('keyup', function(){
+        var temp = document.getElementById('CZK').value
+        if(curList[id].getUnit() > 1)
+        {
+            var units = curList[id].getUnit() / curList[id].getRate()
+            var sum = units * temp
+        }
+        else
+            var sum = temp / curList[id].getRate()
+        
+        //console.log(sum)
+    $('#CUR').val(Math.round(sum * 100) /100);
+    
+})
+
+$('#CUR').on('keyup', function(){
+        var temp = document.getElementById('CUR').value;
+
+        if(curList[id].getUnit() > 1)
+        {
+            var units =  curList[id].getRate() /curList[id].getUnit();
+            var sum = units * temp;
+
+        }
+        else       
+            var sum = temp * curList[id].getRate();
+        
+        //console.log(sum)
+    $('#CZK').val(Math.round(sum *100 ) /100);
+    
+})
+    
+}
+
+function switcSh()
+{
+    
+    var temp = $("#swFlag").prop("checked")
+    if(temp == true)
+    {
+        $("#flag").text("en");
+        $("#push-button1").text("Select currency");
+        getJSONDate();
+    }
+    else
+    {
+        $("#flag").text("cs"); 
+        $("#push-button1").text("Vyberte měnu");
+        getJSONDate();
+    }
+
+}
+
+function closeDialog()
+{
+    document.getElementById('dialog-1').hide();
+}
+
+function getTodayDate() {
+  var today = new Date();
+  var dd = today.getDate();
+  var mm = today.getMonth()+1; //January is 0!
+  var yyyy = today.getFullYear();
+
+  if(dd<10) {
+      dd = '0'+dd
+  } 
+
+  if(mm<10) {
+      mm = '0'+mm
+  } 
+
+  today = yyyy + '-' + mm + '-' + dd;
+
+  document.getElementById("taskDate").value = yyyy+"-"+mm+"-"+dd;
+};
+
+
+
+</script>  
+  
+</head>
+<body>
+<ons-navigator swipeable id="myNavigator" page="page1.html"></ons-navigator>
+
+<template id="page1.html">
+    <ons-page id="page1">
+        <ons-toolbar>
+            <div class="center">CNB Convertor</div>
+        </ons-toolbar>
+                <p style="text-align: center"> CZK </p>
+                <p style="text-align: center"> <ons-input id="CZK" modifier="underbar material" type="number"></ons-input> </p>
+               
+                <p style="text-align: center" id="curP"> CUR</p>
+                <p style="text-align: center"> <ons-input id="CUR" modifier="underbar material" type="number"></ons-input> </p>
+                
+                          
+                <ons-list-item>
+                    <div class="right" style="margin-right: 5%;">
+                        <ons-input id="taskDate" modifier="underbar" placeholder="Task Date" float="">
+                            <input type="date"  class="text-input text-input--underbar" pattern="" placeholder="Date" onchange=getJSONDate()>
+                            <span class="text-input__label text-input--underbar__label">Date</span>
+                        </ons-input>
+                    </div>
+                    <div class="left" style="margin-left: 5%;">
+                        <label id="flag">cs</label><ons-switch id="swFlag" onchange=switcSh()></ons-switch>
+                    </div>
+                </ons-list-item>
+
+
+                  
+
+                <p style="text-align: center">
+                <ons-button modifier="material" id="push-button1" onclick="addDialog();">
+                    Vyberte měnu
+                </ons-button>         
+                </p>
+                <p style="text-align: center" id="myP">
+                </p>
+                <ons-list modifier="inset" >
+                <ons-list-item >
+                    <div class="center" style="margin-left: 4%;">
+                        <canvas id="myCanvas" width="300" height="200" style="border:1px solid #000000;">
+                        </canvas>
+                    </div>
+                </ons-list-item>
+                    
+                </ons-list>
+                <br>
+                <ons-list modifier="inset" id="monthlyRate">                                    
+                </ons-list>
+                
+    </ons-page>   
+</template>
+
+<ons-dialog id="dialog-1" >
+    
+
+  <ons-carousel style="width: 100%; height: 500px;">
+      <ons-carousel-item>     
+      <ons-page>
+        <div style="height: 500px; overflow-y: auto;">      
+       <ons-list id="onsList">       
+       </ons-list>
+       <p style="text-align: center">
+        <ons-button modifier="material" id="push-button1" onclick="closeDialog();">
+            Exit
+        </ons-button>         
+        </p>
+        </div>
+       </ons-page>
+      </ons-carousel-item>
+    </ons-carousel>  
+
+</ons-dialog>
+
+</body>
+</html>

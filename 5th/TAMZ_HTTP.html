@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsenui.css">
+    <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsen-css-components.min.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
+  <script src="https://unpkg.com/jquery/dist/jquery.min.js"></script>
+
+  <style>
+    input[type='text'] { font-size: 13px; font-family:Georgia, 'Times New Roman', Times, serif;}
+    </style>
+    
+</head>
+
+<script>
+    
+async function fetchText(URL) 
+{
+ let response = await fetch(URL);
+ 
+ if (response.ok) 
+ {
+    let data = await response.text();
+    console.log(data);
+
+    document.getElementById('token').value = data;
+ }
+}
+
+function getCode()
+{
+    var login = document.getElementById('login').value;
+    if(login === "")
+    {
+        alert("Login can't be blank");
+        return 1;
+    }
+    var temp = document.getElementById('URL').value
+    var url = temp+"?login="+login;
+     
+    fetchText(url);
+
+    document.getElementById('push-Get').disabled = true;
+    document.getElementById('login').disabled = true;
+    document.getElementById('sendText').innerHTML = "";
+}
+
+function sendCode()
+{
+    var login = document.getElementById('login').value;
+    var temp = document.getElementById('URL').value
+    var url = temp+"?login="+login;
+
+    var token = document.getElementById('token').value;
+
+      
+
+    var s1 = login+":"+token;
+    var s2 =  btoa(unescape(encodeURIComponent(s1)))
+    
+    var jqxhr = $.ajax({
+        url: url,
+        type: "POST", // Also: "GET", …
+        //data: {attribute: 'text1'},
+        headers: { 'API-Token': s2 },
+        success: function(data) {
+        document.getElementById('sendText').innerHTML = '&#9989;' + "I was successful and received data: " + data;
+        document.getElementById('push-Get').disabled = false;
+        document.getElementById('login').disabled = false;
+        }
+        })
+        .fail(function(err) {
+            document.getElementById('sendText').innerHTML = '&#10071;' + '&#10071' +"Something went wrong: " + err.responseText;
+    });
+}
+
+</script>
+<body>
+    <ons-page id="page1" class="page" shown="" style="">
+        <ons-toolbar class="toolbar">
+            <div class="center toolbar__center toolbar__title">&#128225; HTTP</div>
+        </ons-toolbar>
+        <div class="page__background"></div>
+        <div class="page__content">
+        <ons-card >
+            <ons-list tappable modifier="nodivider">
+                <ons-list modifier="inset" tappable > 
+                    <ons-list-item modifier="nodivider">
+                        <ons-input id="URL" modifier="underbar" placeholder="URL" value="https://homel.vsb.cz/~mor03/TAMZ/TAMZ.php" float size="40" ></ons-input>
+                    </ons-list-item>                
+                    <ons-list-item modifier="nodivider">
+                        <ons-input id="login" modifier="underbar" placeholder="Username"  float></ons-input>
+                    </ons-list-item>
+                    <ons-list modifier="inset" tappable style="width: 200px;">
+                        <ons-list-header>Secret token</ons-list-header>
+                        <textarea id="token" name="taskNotes" style="height: 50px; width: 200px; border: none ; font: inherit;"></textarea>
+                    </ons-list>  
+                    <br>
+                    <ons-list-item modifier="nodivider">
+                        <label id="sendText"></label>
+                    </ons-list-item>
+                </ons-list>
+                <br>
+                <ons-list-item modifier="nodivider">
+                <ons-button modifier="material" id="push-Get" onclick="getCode()" class="button button--material" style="margin-left: 2%;">Get code</ons-button>
+                <ons-button modifier="material" id="push-Send" onclick="sendCode()" class="button button--material" style="margin-left: 21%;">Send Code</ons-button>
+            </ons-list-item>
+            </ons-list>
+    </ons-page>
+</body>
+</html>

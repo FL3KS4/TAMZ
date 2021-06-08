@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<!-- saved from url=(0060)http://mrl.cs.vsb.cz/data/vyuka/tamz/3/storage_template.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsenui.css">
+    <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsen-css-components.min.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
+  <script src="https://unpkg.com/jquery/dist/jquery.min.js"></script>
+ <script> 
+
+
+//TODO 0 - upravit tak aby se misto ukol 1, ukol 2, ukol 3 zobrazoval název úkolu ✅
+//TODO 1 - k nazvu ukolu pridat a ulozit i uzivatelem zvolene datum ✅
+//TODO 2 - doplnit funkci na stisk tlačítka, které odstraní všechny prvky z úložiště ✅
+//TODO 3 - po zvoleni daneho ukolu zobrazit dialog s možností odstranit úkol ✅
+//TODO 4 - po zvolení odstranit úkol - tento úkol skutečně odstranit z úložiště ✅ 
+//TODO 5 - vytvorit objekt ukol a do uloziste ukladat a nacitat tento objekt pomoci JSON ✅
+
+
+//TODO 1 - zlepšit vzhled aplikace (list, barva a velikost pisma) ✅
+//+ místo klasických tlačítek použít "floating action button" (ons-fab) ✅
+//TODO 2 - k názvu úkolu a datu přidat alespoň 4 další prvky, např. (poznámky, barvu, prioritu, atd.) ✅
+//+ využít předchozího cvičení a vypočítat počet dnů do daného úkolu a tuto informaci take zobrazit ✅
+//TODO 3 - vytvořit třídu reprezentující úkol a do úložište ✅ pořad objekt
+//ukládat a načítat data pomocí JSON, https://www.w3schools.com/js/js_classes.asp ✅ Používam pořad objekt, nedělal jsem tu třídu
+//TODO 4 - po zvolení daného úkolu zobrazit v dialogu s názvem i poznámky  ✅
+//+ možnost ukázat a upravit (SHOW/EDIT) daný úkol ✅
+//TODO 5 - po zvolení možnosti SHOW/EDIT všechny prvky daného úkolu zobrazit✅
+//TODO 6 - skutečně záznam editovat a následné změny uložit i do localStorage✅
+//TODO 7 BONUS - hodnota favorites je jediná vlastnost, která se jen ukládá do localStorage, ale reálně v té aplikaci není použita. Pokud by někdo opravdu chtěl i tuto vlastnost použít a vytvoří si další např. nějakou záložku/menu/stránku/list ve, kterém tyto favorites záznamy budou uloženy, tak může získat lepší hodnocení.
+  
+var color;
+
+document.addEventListener('init', function(event)
+{
+    showTodo();    
+});
+
+function addTask()
+{
+    var myDate = new Date();
+    //vytvori klic pro ukladani zaznamu do local storage
+    //klic muzete vytvorit i vlastni/jiny
+    var myKey = myDate.getTime();
+    //zaznam, ktery bude ulozen pod klicem
+    var todoText = $("#taskName").val();
+    var todoDate = new Date($("#taskDate").val()).toLocaleDateString();
+    var todoNotes = $("#taskText").val();
+    var todoColor = color;
+    var temp = document.getElementById('switch-1');
+    var todoFav = temp.checked;
+    var priority;
+
+
+    if($("#choosePrio").val() == "Low")
+    {
+        priority = '&#10071';
+    }
+    else if($("#choosePrio").val() == "Medium")
+    {
+        priority = '&#10071&#10071';
+    }
+    else
+    {
+        priority = '&#10071&#10071&#10071';
+    }
+
+    var taskObj = {"todoDate" : todoDate, "todoText" : todoText, "priority" : priority, "todoColor" : todoColor, "todoFav" : todoFav, "todoNotes" : todoNotes}; 
+    var myJSON = JSON.stringify(taskObj);
+
+
+    if(todoText.length)
+    {
+        localStorage.setItem(myKey, myJSON);       
+    }
+    
+    showTodo();
+}
+
+function removeAll()
+{
+    localStorage.clear();
+    $("#todoList").empty();
+}
+
+function itemClick(id)
+{
+    document.getElementById('dialog-TODO').show(); 
+   var lName =  document.getElementById('labelName');
+   var tName =  document.getElementById('labelNotes');
+   var myObj = JSON.parse(localStorage.getItem(id));
+
+   lName.innerHTML = myObj.todoText+ "  "+ " 🗓️" + myObj.todoDate ;
+   tName.innerHTML = myObj.todoNotes;
+
+    var removeButton = document.getElementById('push-Delete');
+    //removeButton.appendChild(document.createTextNode("remove"));
+    removeButton.setAttribute('onClick',"deleteTask("+id+")");
+    //document.getElementById('todoList').removeChild(id);   
+
+    var editTaskbutton = document.getElementById('push-Edit');
+    editTaskbutton.setAttribute('onClick',"editTask("+id+")");
+}
+
+function editTask(id)
+{
+    document.getElementById('dialog-TODO').hide();
+
+    document.getElementById('dialog-3').show();
+
+    var taskText =  document.getElementById('taskTextEdit');
+    //var taskName =  document.getElementById('Edit');
+    var taskFav =  document.getElementById('switch-1-edit');
+    var myObj = JSON.parse(localStorage.getItem(id));
+
+    
+    
+    $("#taskNameEdit").val(myObj.todoText);
+    //var todoDate = new Date($("#taskDate").val()).toLocaleDateString();
+
+    var tempDate = new Date(myObj.todoDate);
+    tempDate.setFullYear(tempDate.getFullYear(), tempDate.getMonth(),tempDate.getDate() + 1);
+
+    document.getElementById('taskDateEditt').valueAsDate = new Date(tempDate);
+    taskText.innerHTML = myObj.todoNotes;
+    taskFav.setAttribute('checked', myObj.todoFav);
+
+    console.log($("#choosePrioEdit").val());
+
+    if(myObj.todoColor == $("#radio-3-edit").val())
+    {
+        $("#radio-3-edit").prop("checked", true);
+    }
+    else if(myObj.todoColor == $("#radio-1-edit").val())
+    {
+        $("#radio-1-edit").prop("checked", true);
+    }
+    else if(myObj.todoColor == $("#radio-2-edit").val())
+    {
+        $("#radio-2-edit").prop("checked", true);
+    }
+
+    console.log(myObj.priority);
+
+    if( '&#10071&#10071&#10071' == myObj.priority)
+    {
+        $("#choosePrioEdit select").val("High");
+    }
+    else if( '&#10071&#10071' == myObj.priority)
+    {
+        $("#choosePrioEdit select").val("Medium");
+    }
+    else if( '&#10071' == myObj.priority)
+    {
+        $("#choosePrioEdit select").val("Low");
+    }
+
+    var editbutton = document.getElementById('push-Save-Edit');
+    editbutton.setAttribute('onClick',"editButton("+id+")");
+
+}
+
+function editButton(id)
+{
+    var editText = $("#taskNameEdit").val();
+    var myObj = JSON.parse(localStorage.getItem(id));
+
+    var editDate = new Date($("#taskDateEdit").val()).toLocaleDateString();
+    var editNotes = $("#taskTextEdit").val();
+    var editColor = color;
+    var temp = document.getElementById('switch-1-edit');
+    var editFav = temp.checked;
+    var editPriority;
+
+
+    if($("#choosePrioEdit").val() == "Low")
+    {
+        editPriority = '&#10071';
+    }
+    else if($("#choosePrioEdit").val() == "Medium")
+    {
+        editPriority = '&#10071&#10071';
+    }
+    else
+    {
+        editPriority = '&#10071&#10071&#10071';
+    }
+
+   var taskObj = {"todoDate" : editDate, "todoText" : editText, "priority" : editPriority, "todoColor" : editColor, "todoFav" : editFav, "todoNotes" : editNotes}; 
+   var myJSON = JSON.stringify(taskObj);
+
+
+    if(editText.length)
+    {
+        localStorage.setItem(id, myJSON);       
+    }
+   
+    showTodo();
+}
+
+function deleteTask(idd)
+{
+    localStorage.removeItem(idd); 
+    document.getElementById('dialog-TODO').hide();
+
+    showTodo();   
+}
+
+function showTodo()
+{
+    $("#todoList").empty();
+
+    for (var i = 0; i < localStorage.length; i++)
+    {
+        var onsItem= document.createElement('ons-list-item');
+        var myKey = localStorage.key(i);
+        var myObj = JSON.parse(localStorage.getItem(myKey));
+
+        var globalOneDay = 24*60*60*1000;
+        var actualDate = new Date();
+        var tempDate = new Date(myObj.todoDate);
+        var temp = new Date()
+        temp.setFullYear(tempDate.getFullYear(), tempDate.getMonth(), tempDate.getDate());
+        var dayTillend = Math.round((tempDate.getTime() - actualDate.getTime()) / globalOneDay) + 1;
+
+        //console.log(temp.toLocaleDateString());
+        
+        
+
+        //console.log(myObj);
+        onsItem.setAttribute('onclick', "itemClick("+myKey+")"); 
+        onsItem.setAttribute('modifier', "tappable");
+        onsItem.setAttribute("style", "color: "+myObj.todoColor+";");
+        
+        onsItem.innerHTML = myObj.priority + " " + myObj.todoText + " " + myObj.todoDate + " " + dayTillend + " day(s)";
+        document.getElementById('todoList').appendChild(onsItem); 
+
+        
+    }
+}
+
+function addDialog()
+{
+    document.getElementById('dialog-1').show();
+}
+
+function closeDialog()
+{
+    document.getElementById('dialog-1').hide();
+    document.getElementById('dialog-TODO').hide();
+    document.getElementById('dialog-3').hide();
+}
+
+function radioColor(val)
+{
+    var options = new Object();
+    options.title = "Radio Value";
+    color = val;
+}
+
+</script>  
+  
+</head>
+<body data-device-back-button-handler-id="2" style="touch-action: pan-y; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);">
+<ons-navigator swipeable="" id="myNavigator" page="page1.html" _is-running="false" data-device-back-button-handler-id="0" style="touch-action: pan-y; -webkit-user-drag: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0);"><ons-page id="page1" class="page" shown="" style=""><ons-toolbar class="toolbar"><div class="center toolbar__center toolbar__title">📋 TaskIE</div></ons-toolbar><div class="page__background"></div><div class="page__content">
+</ons-navigator>
+    <ons-card>
+        <ons-list>
+            <ons-list-header style="font-family: fantasy; font-size: 15px;">
+                📋 TODO
+            </ons-list-header>
+        </ons-list>
+
+        <ons-list id="todoList" class="list" style="font-family:monospace; font-size: 15px;"></ons-list>
+    </ons-card>
+
+    <ons-fab position="bottom right" onclick="addDialog()">
+        <ons-icon icon="md-plus"></ons-icon>
+    </ons-fab>
+    <ons-fab position="bottom left" onclick="removeAll()">
+        <ons-icon icon="md-delete" ></ons-icon>
+    </ons-fab>
+
+
+</ons-page>
+<template id="page1.html">
+
+    
+
+</template>
+
+<ons-dialog id="dialog-1" status-bar-fill="" style="display:none; z-index: 10001;" data-device-back-button-handler-id="1"><div class="dialog-mask" style="z-index: 20000; "></div><div class="dialog" style="z-index: 20001;"><div class="dialog-container" >
+
+    <div style="text-align: center; padding: 10px; margin-bottom: 5%;">
+
+    <ons-list modifier="inset" tappable>
+        <ons-list-item  modifier="nodivider">
+            <ons-input id="taskName" modifier="underbar" placeholder="Task Name" float="">⌨️
+                <input  type="text" class="text-input text-input--underbar" placeholder="Task Name">
+                <span class="text-input__label text-input--underbar__label">Task Name</span>
+            </ons-input>
+        </ons-list-item>
+        <ons-list-item modifier="nodivider" >
+            <ons-input id="taskDate" modifier="underbar" placeholder="Task Date" float="">🗓️
+                <input type="date"  class="text-input text-input--underbar" pattern="" placeholder="Date">
+                <span class="text-input__label text-input--underbar__label">Date</span>
+            </ons-input>
+        </ons-list-item>
+        <ons-list modifier="inset" tappable >
+            <ons-list-header>✍️ Notes</ons-list-header>
+        <ons-list-item modifier="nodivider">
+                <textarea id="taskText" name="taskNotes" style="height: 60px; border: none ; font: inherit;"></textarea>
+        </ons-list-item>
+        </ons-list>
+        <br>
+        <ons-list modifier="nodivider" style="margin-left: 3%;margin-right: 3%">
+            <ons-list-header>🎨 Color</ons-list-header>
+            <ons-list-item tappable >
+                <label class="left">
+                  <ons-radio name="color" input-id="radio-3" value="black" onchange="radioColor('black')"></ons-radio>
+                </label>
+                <label for="radio-3" class="center" style="color:black;">
+                  Black
+                </label>
+              </ons-list-item>
+            <ons-list-item tappable>
+              <label class="left">
+                <ons-radio name="color" input-id="radio-1" value="red" onchange="radioColor('red')"></ons-radio>
+              </label>
+              <label for="radio-1" class="center" style="color: red;">
+                Red
+              </label>
+            </ons-list-item>
+            <ons-list-item tappable>
+              <label class="left">
+                <ons-radio name="color" input-id="radio-2" value="blue" onchange="radioColor('blue')"></ons-radio>
+              </label>
+              <label for="radio-2" class="center" style="color: blue;">
+                Blue
+              </label>
+            </ons-list-item>
+           
+          </ons-list>
+
+          <ons-list-item>
+            <div class="center">
+                ⭐ Add to favorites
+            </div>
+            <div class="right">
+              <ons-switch id="switch-1">⭐</ons-switch>
+            </div>
+          </ons-list-item>
+          
+        <ons-list-item style="margin-left: 10%;"> 
+            <label style="margin-right: 15%;">❗</label>
+            <ons-select id="choosePrio">
+                <option value="Priority" disabled selected style="background-color: inherit;">Priority</option>
+                <option value="Low" style="background-color: inherit;">Low</option>
+                <option value="Medium" style="background-color: inherit;">Medium</option>
+                <option value="High" style="background-color: inherit;">High</option>
+            </ons-select>
+        </ons-list-item>
+    </ons-list> 
+    </div>
+    <div style="text-align: center; padding: 10px; margin-bottom: 5%;">
+    <ons-button modifier="material" id="push-button4" onclick="addTask()" class="button button--material">Add Task</ons-button>
+    <ons-button modifier="material" id="push-button5" onclick="closeDialog()" class="button button--material">Close</ons-button>       
+    </div>
+    
+</div></div></ons-dialog>
+
+<ons-dialog id="dialog-TODO" status-bar-fill="" style="display: none; z-index: 10001;" data-device-back-button-handler-id="1"> 
+    <div class="dialog-mask" style="z-index: 20000;">¨
+    </div>
+    <div class="dialog" style="z-index: 20001;">
+        <div class="dialog-container">
+            <div style="text-align: center; padding: 10px;">
+                <ons-list modifier="inset">
+                    <ons-list-header ><label id="labelName" style="text-align:center; font-family:Impact; word-spacing: 20px; font-size: 15px;"></label></ons-list-header>
+                    <ons-list-item style="font-family: monospace;">
+                        <textarea name="labelNotes" id="labelNotes" style="height: 60px; border: none;"></textarea>
+                    </ons-list-item>
+
+                </ons-list>
+                <p><ons-button modifier="material" id="push-Edit"  class="button button--material"><ons-icon icon="md-edit" ></ons-icon> Show/edit</ons-button></p>
+            <p><ons-button modifier="material" id="push-Delete" onclick="deleteTask()" class="button button--material"><ons-icon icon="md-delete" ></ons-icon> Delete Task</ons-button></p> 
+            <p><ons-button modifier="material" id="push-button5" onclick="closeDialog()" class="button button--material">Close</ons-button></p>       
+            </div>   
+        </div>
+    </div>
+</ons-dialog>
+
+<ons-dialog id="dialog-3" status-bar-fill="" style="display: none; z-index: 10001;" data-device-back-button-handler-id="1"><div class="dialog-mask" style="z-index: 20000;"></div><div class="dialog" style="z-index: 20001;"><div class="dialog-container">
+
+    <div style="text-align: center; padding: 10px; margin-bottom: 5%; ">
+
+    <ons-list modifier="inset" tappable >
+        <ons-list-item  modifier="nodivider">
+            <ons-input id="taskNameEdit" modifier="underbar" placeholder="Task Name" float="">⌨️
+                <input type="text" class="text-input text-input--underbar" placeholder="Task Name">
+                <span class="text-input__label text-input--underbar__label">Task Name</span>
+            </ons-input>
+        </ons-list-item>
+        <ons-list-item modifier="nodivider" >
+            <ons-input id="taskDateEdit" modifier="underbar" placeholder="Task Date" float="">🗓️
+                <input id="taskDateEditt" type="date"  class="text-input text-input--underbar" pattern="" placeholder="Date">
+                <span class="text-input__label text-input--underbar__label">Date</span>
+            </ons-input>
+        </ons-list-item>
+        <ons-list modifier="inset" tappable >
+            <ons-list-header>✍️ Notes</ons-list-header>
+        <ons-list-item modifier="nodivider">
+                <textarea id="taskTextEdit" name="taskNotes" style="height: 60px; border: none ; font: inherit;"></textarea>
+        </ons-list-item>
+        </ons-list>
+        <br>
+        <ons-list modifier="nodivider" style="margin-left: 3%;margin-right: 3%">
+            <ons-list-header>🎨 Color</ons-list-header>
+            <ons-list-item tappable >
+                <label class="left">
+                  <ons-radio name="color" input-id="radio-3-edit" value="black" onchange="radioColor('black')"></ons-radio>
+                </label>
+                <label for="radio-3-edit" class="center" style="color:black;">
+                  Black
+                </label>
+              </ons-list-item>
+            <ons-list-item tappable>
+              <label class="left">
+                <ons-radio name="color" input-id="radio-1-edit" value="red" onchange="radioColor('red')"></ons-radio>
+              </label>
+              <label for="radio-1-edit" class="center" style="color: red;">
+                Red
+              </label>
+            </ons-list-item>
+            <ons-list-item tappable>
+              <label class="left">
+                <ons-radio name="color" input-id="radio-2-edit" value="blue" onchange="radioColor('blue')"></ons-radio>
+              </label>
+              <label for="radio-2-edit" class="center" style="color: blue;">
+                Blue
+              </label>
+            </ons-list-item>
+           
+          </ons-list>
+
+          <ons-list-item>
+            <div class="center">
+                ⭐ Add to favorites
+            </div>
+            <div class="right">
+              <ons-switch id="switch-1-edit">⭐</ons-switch>
+            </div>
+          </ons-list-item>
+          
+        <ons-list-item style="margin-left: 10%;"> 
+            <label style="margin-right: 15%;">❗</label>
+            <ons-select id="choosePrioEdit">
+                <option value="Priority" disabled selected style="background-color: inherit;">Priority</option>
+                <option value="Low" style="background-color: inherit;">Low</option>
+                <option value="Medium" style="background-color: inherit;">Medium</option>
+                <option value="High" style="background-color: inherit;">High</option>
+            </ons-select>
+        </ons-list-item>
+    </ons-list> 
+    </div>
+    <div style="text-align: center; padding: 10px; margin-bottom: 5%;">
+    <ons-button modifier="material" id="push-Save-Edit" onclick="editTask()" class="button button--material"> <ons-icon icon="md-save" ></ons-icon> Save</ons-button>
+    <ons-button modifier="material" id="push-button5-Edit" onclick="closeDialog()" class="button button--material">Close</ons-button>       
+    </div>
+    
+</div></div></ons-dialog>
+
+</body></html>
